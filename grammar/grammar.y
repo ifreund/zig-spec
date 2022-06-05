@@ -3,65 +3,34 @@ Root <- skip container_doc_comment? ContainerMembers eof
 # *** Top level ***
 ContainerMembers <- ContainerDeclarations (ContainerField COMMA)* (ContainerField / ContainerDeclarations)
 
-ContainerDeclarations
-    <- TestDecl ContainerDeclarations
-     / TopLevelComptime ContainerDeclarations
-     / doc_comment? KEYWORD_pub? TopLevelDecl ContainerDeclarations
-     /
+ContainerDeclarations <- (doc_comment? ContainerDeclaration SEMICOLON)*
 
-TestDecl <- doc_comment? KEYWORD_test STRINGLITERALSINGLE? Block
+ContainerDeclaration
+    <- KEYWORD_test STRINGLITERALSINGLE? Block
+     / KEYWORD_comptime Block
+     / KEYWORD_pub? (ExportExtern / KEYWORD_inline / KEYWORD_noinline)? FnProto Block?
+     / KEYWORD_pub? ExportExtern? KEYWORD_threadlocal? VarDecl
+     / KEYWORD_pub? KEYWORD_usingnamespace Expr
 
-TopLevelComptime <- doc_comment? KEYWORD_comptime BlockExpr
-
-TopLevelDecl
-    <- (KEYWORD_export / KEYWORD_extern STRINGLITERALSINGLE? / (KEYWORD_inline / KEYWORD_noinline))? FnProto (SEMICOLON / Block)
-     / (KEYWORD_export / KEYWORD_extern STRINGLITERALSINGLE?)? KEYWORD_threadlocal? VarDecl
-     / KEYWORD_usingnamespace Expr SEMICOLON
+ExportExtern <- KEYWORD_export / KEYWORD_extern STRINGLITERALSINGLE?
 
 FnProto <- KEYWORD_fn IDENTIFIER? LPAREN ParamDeclList RPAREN ByteAlign? LinkSection? CallConv? EXCLAMATIONMARK? TypeExpr
 
-VarDecl <- (KEYWORD_const / KEYWORD_var) IDENTIFIER (COLON TypeExpr)? ByteAlign? LinkSection? (EQUAL Expr)? SEMICOLON
+VarDecl <- (KEYWORD_const / KEYWORD_var) IDENTIFIER (COLON TypeExpr)? ByteAlign? LinkSection? (EQUAL Expr)?
 
 ContainerField <- doc_comment? KEYWORD_comptime? IDENTIFIER (COLON TypeExpr ByteAlign?)? (EQUAL Expr)?
 
 # *** Block Level ***
+Block <- LBRACE (Statement SEMICOLON)* RBRACE
+
 Statement
     <- KEYWORD_comptime? VarDecl
-     / KEYWORD_comptime BlockExprStatement
-     / KEYWORD_nosuspend BlockExprStatement
-     / KEYWORD_suspend BlockExprStatement
-     / KEYWORD_defer BlockExprStatement
-     / KEYWORD_errdefer Payload? BlockExprStatement
-     / IfStatement
-     / LabeledStatement
-     / SwitchExpr
-     / AssignExpr SEMICOLON
-
-IfStatement
-    <- IfPrefix BlockExpr ( KEYWORD_else Payload? Statement )?
-     / IfPrefix AssignExpr ( SEMICOLON / KEYWORD_else Payload? Statement )
-
-LabeledStatement <- BlockLabel? (Block / LoopStatement)
-
-LoopStatement <- KEYWORD_inline? (ForStatement / WhileStatement)
-
-ForStatement
-    <- ForPrefix BlockExpr ( KEYWORD_else Statement )?
-     / ForPrefix AssignExpr ( SEMICOLON / KEYWORD_else Statement )
-
-WhileStatement
-    <- WhilePrefix BlockExpr ( KEYWORD_else Payload? Statement )?
-     / WhilePrefix AssignExpr ( SEMICOLON / KEYWORD_else Payload? Statement )
-
-BlockExprStatement
-    <- BlockExpr
-     / AssignExpr SEMICOLON
-
-BlockExpr <- BlockLabel? Block
+     / KEYWORD_suspend Expr
+     / KEYWORD_defer Expr
+     / KEYWORD_errdefer Payload? Expr
+     / Expr
 
 # *** Expression Level ***
-AssignExpr <- Expr (AssignOp Expr)?
-
 Expr <- BoolOrExpr
 
 BoolOrExpr <- BoolAndExpr (KEYWORD_or BoolAndExpr)*
@@ -90,12 +59,10 @@ PrimaryExpr
      / KEYWORD_resume Expr
      / KEYWORD_return Expr?
      / BlockLabel? LoopExpr
-     / Block
+     / BlockLabel? Block
      / CurlySuffixExpr
 
 IfExpr <- IfPrefix Expr (KEYWORD_else Payload? Expr)?
-
-Block <- LBRACE Statement* RBRACE
 
 LoopExpr <- KEYWORD_inline? (ForExpr / WhileExpr)
 
@@ -179,7 +146,7 @@ BlockLabel <- IDENTIFIER COLON
 
 FieldInit <- DOT IDENTIFIER EQUAL Expr
 
-WhileContinueExpr <- COLON LPAREN AssignExpr RPAREN
+WhileContinueExpr <- COLON LPAREN Expr RPAREN
 
 LinkSection <- KEYWORD_linksection LPAREN Expr RPAREN
 
@@ -210,7 +177,7 @@ PtrIndexPayload <- PIPE ASTERISK? IDENTIFIER (COMMA IDENTIFIER)? PIPE
 
 
 # Switch specific
-SwitchProng <- SwitchCase EQUALRARROW PtrPayload? AssignExpr
+SwitchProng <- SwitchCase EQUALRARROW PtrPayload? Expr
 
 SwitchCase
     <- SwitchItem (COMMA SwitchItem)* COMMA?
@@ -290,6 +257,7 @@ SuffixOp
      / DOT IDENTIFIER
      / DOTASTERISK
      / DOTQUESTIONMARK
+     / AssignOp Expr
 
 FnCallArguments <- LPAREN ExprList RPAREN
 
