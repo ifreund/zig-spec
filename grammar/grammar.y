@@ -35,11 +35,11 @@ Statement
      / IfStatement
      / LabeledStatement
      / SwitchExpr
-     / AssignExpr SEMICOLON
+     / Expr SEMICOLON
 
 IfStatement
     <- IfPrefix BlockExpr ( KEYWORD_else Payload? Statement )?
-     / IfPrefix AssignExpr ( SEMICOLON / KEYWORD_else Payload? Statement )
+     / IfPrefix Expr ( SEMICOLON / KEYWORD_else Payload? Statement )
 
 LabeledStatement <- BlockLabel? (Block / LoopStatement)
 
@@ -47,22 +47,22 @@ LoopStatement <- KEYWORD_inline? (ForStatement / WhileStatement)
 
 ForStatement
     <- ForPrefix BlockExpr ( KEYWORD_else Statement )?
-     / ForPrefix AssignExpr ( SEMICOLON / KEYWORD_else Statement )
+     / ForPrefix Expr ( SEMICOLON / KEYWORD_else Statement )
 
 WhileStatement
     <- WhilePrefix BlockExpr ( KEYWORD_else Payload? Statement )?
-     / WhilePrefix AssignExpr ( SEMICOLON / KEYWORD_else Payload? Statement )
+     / WhilePrefix Expr ( SEMICOLON / KEYWORD_else Payload? Statement )
 
 BlockExprStatement
     <- BlockExpr
-     / AssignExpr SEMICOLON
+     / Expr SEMICOLON
 
 BlockExpr <- BlockLabel? Block
 
 # *** Expression Level ***
-AssignExpr <- Expr (AssignOp Expr)?
+Expr <- AssignExpr
 
-Expr <- BoolOrExpr
+AssignExpr <- BoolOrExpr (AssignOp BoolOrExpr)?
 
 BoolOrExpr <- BoolAndExpr (KEYWORD_or BoolAndExpr)*
 
@@ -179,7 +179,7 @@ BlockLabel <- IDENTIFIER COLON
 
 FieldInit <- DOT IDENTIFIER EQUAL Expr
 
-WhileContinueExpr <- COLON LPAREN AssignExpr RPAREN
+WhileContinueExpr <- COLON LPAREN Expr RPAREN
 
 LinkSection <- KEYWORD_linksection LPAREN Expr RPAREN
 
@@ -210,7 +210,7 @@ PtrIndexPayload <- PIPE ASTERISK? IDENTIFIER (COMMA IDENTIFIER)? PIPE
 
 
 # Switch specific
-SwitchProng <- SwitchCase EQUALRARROW PtrPayload? AssignExpr
+SwitchProng <- SwitchCase EQUALRARROW PtrPayload? Expr
 
 SwitchCase
     <- SwitchItem (COMMA SwitchItem)* COMMA?
